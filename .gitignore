@@ -1,4 +1,5 @@
-Sources/
 *.aux
 *.log
 *.gz
+*.txt
+.Rproj.user

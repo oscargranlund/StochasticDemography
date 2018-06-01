@@ -1,8 +1,8 @@
 library(forecast)
 library(ggplot2)
 
-finlanddata <- read.table("FINtfrRR.txt", skip=2, header=TRUE)
-finlanddata <- read.table(countries[[1]][[2]][1], skip=2, header=TRUE)
+#finlanddata <- read.table("FINtfrRR.txt", skip=2, header=TRUE)
+#finlanddata <- read.table(countries[[1]][[2]][1], skip=2, header=TRUE)
 countries <- list(
   list("Finland", "FINtfrRR.txt"),
   list("Sweden", "SWEtfrRR.txt"),
@@ -11,18 +11,23 @@ countries <- list(
   list("France", "FRATNPtfrRR.txt"),
   list("Switzerland", "CHEtfrRR.txt"),
   list("Italy", "ITAtfrRR.txt"),
-  list("Spain", "ITAtfrRR.txt"))
+  list("Spain", "ESPtfrRR.txt"))
 
 data <- list()
 for (i in 1:length(countries)){
   data[[i]] <- read.table(countries[[i]][[2]][1], skip=2, header=TRUE)
 }
 
-traingindata <- list()
+trainingset <- list()
+validationset <- list()
+for (i in 1:length(countries)){
+  trainingset[[i]] <- subset(data[[i]], data[[i]]$Year < 2010)
+  validationset[[i]] <- subset(data[[i]], data[[i]]$Year >= 2010)
+}
 
-for (i in data) {
-  #ggtsdisplay(i$TFR, lag.max=30)
-  print(i$Year[length(i$Year)])
+for (i in trainingset) {
+  ggtsdisplay(i$TFR, lag.max=30)
+  #print(i$Year[length(i$Year)])
 }
 n <- nrow(data[[1]])-10
 window(data[1], end=n)

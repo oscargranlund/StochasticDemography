@@ -1,8 +1,12 @@
 library(forecast)
 library(ggplot2)
+library(ggpubr)
+#library(gridExtra)
+#library(grid)
+#library(gtable)
+#library(egg)
+source("utils.R")
 
-#finlanddata <- read.table("FINtfrRR.txt", skip=2, header=TRUE)
-#finlanddata <- read.table(countries[[1]][[2]][1], skip=2, header=TRUE)
 countries <- list(
   list("Finland", "FINtfrRR.txt"),
   list("Sweden", "SWEtfrRR.txt"),
@@ -20,15 +24,17 @@ for (i in 1:length(countries)){
 
 trainingset <- list()
 validationset <- list()
-for (i in 1:length(countries)){
+for (i in 1:length(countries)) {
   trainingset[[i]] <- subset(data[[i]], data[[i]]$Year < 2010)
   validationset[[i]] <- subset(data[[i]], data[[i]]$Year >= 2010)
 }
 
-for (i in trainingset) {
-  ggtsdisplay(i$TFR, lag.max=30)
-  #print(i$Year[length(i$Year)])
+for (i in 1:length(countries)) {
+  createAutocorrelationPlot(trainingset[[i]], countries[[i]][1]) %>%
+  #ggexport(filename=paste(c("AC", countries[[i]][1], ".pdf"), collapse=""))
+    print()
 }
+
 n <- nrow(data[[1]])-10
 window(data[1], end=n)
 length(data[[1]])

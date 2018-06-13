@@ -7,6 +7,13 @@ library(ggpubr)
 #library(egg)
 source("utils.R")
 
+# Please note that the development version of forecast might be needed
+# for ndiffs to work, as per https://github.com/robjhyndman/forecast/issues/695.
+# Install by running
+# devtools::install_github("robjhyndman/forecast")
+# and make sure the devtools are installed before,
+# install.packages("devtools")
+
 countries <- list(
   list("Finland", "FINtfrRR.txt"),
   list("Sweden", "SWEtfrRR.txt"),
@@ -33,7 +40,14 @@ for (i in 1:length(countries)) {
   createAutocorrelationPlot(trainingset[[i]], countries[[i]][1]) %>%
   #ggexport(filename=paste(c("AC", countries[[i]][1], ".pdf"), collapse=""))
     print()
+  #ndiffs(trainingset[[1]]$TFR, test = "adf", type = "level")
 }
+
+for (j in trainingset) {
+  print(ndiffs(j$TFR, test = "adf", type = "level", max.d = 3, alpha = 0.01))
+}
+
+ndiffs(trainingset[[1]]$TFR, test="adf", type="level")
 
 n <- nrow(data[[1]])-10
 window(data[1], end=n)

@@ -15,39 +15,47 @@ source("utils.R")
 # install.packages("devtools")
 
 countries <- list(
-  list("Finland", "FINtfrRR.txt"),
-  list("Sweden", "SWEtfrRR.txt"),
-  list("Estonia", "ESTtfrRR.txt"),
+  list("Finland",           "FINtfrRR.txt"    ),
+  list("Sweden",            "SWEtfrRR.txt"    ),
+  list("Estonia",           "ESTtfrRR.txt"    ),
   list("England and Wales", "GBRTENWtfrRR.txt"),
-  list("France", "FRATNPtfrRR.txt"),
-  list("Switzerland", "CHEtfrRR.txt"),
-  list("Italy", "ITAtfrRR.txt"),
-  list("Spain", "ESPtfrRR.txt"))
+  list("France",            "FRATNPtfrRR.txt" ),
+  list("Switzerland",       "CHEtfrRR.txt"    ),
+  list("Italy",             "ITAtfrRR.txt"    ),
+  list("Spain",             "ESPtfrRR.txt"    ))
 
 data <- list()
 for (i in 1:length(countries)){
   data[[i]] <- read.table(countries[[i]][[2]][1], skip=2, header=TRUE)
 }
 
-trainingset <- list()
+trainingStart   <- 1900
+validationStart <- 2010
+trainingset   <- list()
 validationset <- list()
 for (i in 1:length(countries)) {
-  trainingset[[i]] <- subset(data[[i]], data[[i]]$Year < 2010)
-  validationset[[i]] <- subset(data[[i]], data[[i]]$Year >= 2010)
+  trainingset[[i]]   <- subset(data[[i]], (data[[i]]$Year <  validationStart &
+                                           data[[i]]&Year >= trainingStart   ))
+  validationset[[i]] <- subset(data[[i]],  data[[i]]$Year >= validationStart )
 }
 
+numberOfDiffs = matrix(nrow = length(countries), ncol = 3)
 for (i in 1:length(countries)) {
-  createAutocorrelationPlot(trainingset[[i]], countries[[i]][1]) %>%
+  #createAutocorrelationPlot(trainingset[[i]], countries[[i]][1]) %>%
   #ggexport(filename=paste(c("AC", countries[[i]][1], ".pdf"), collapse=""))
-    print()
-  #ndiffs(trainingset[[1]]$TFR, test = "adf", type = "level")
+  #  print()
+  t   <- "level"
+  md  <- 3
+  alp <- 0.05
+  numberOfDiffs[i, 1] <- ndiffs(
+    trainingset[[i]]$TFR, test = "kpss", type = t, max.d = md, alpha = alp)
+  numberOfDiffs[i, 2] <- ndiffs(
+    trainingset[[i]]$TFR, test = "adf",  type = t, max.d = md, alpha = alp)
+  numberOfDiffs[i, 3] <- ndiffs(
+    trainingset[[i]]$TFR, test = "pp",   type = t, max.d = md, alpha = alp)
+  print(getMode(numberOfDiffs[i, ]))
 }
 
-for (j in trainingset) {
-  print(ndiffs(j$TFR, test = "adf", type = "level", max.d = 3, alpha = 0.01))
-}
-
-ndiffs(trainingset[[1]]$TFR, test="adf", type="level")
 
 n <- nrow(data[[1]])-10
 window(data[1], end=n)

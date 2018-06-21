@@ -19,20 +19,9 @@ createAutocorrelationPlot <- function(df, cn) {
                    pd,
                    ggarrange(p2, p3, ncol = 2),
                    ggarrange(p4, p5, ncol = 2), nrow = 4))
+}
 
-  
-#  g1 <- ggplotGrob(p1)
-#  g2 <- ggplotGrob(p2)
-#  g3 <- ggplotGrob(p3)
-#  gl <- rbind(g2, g3, size='first')
-#  g  <- rbind(g1, gl, size='first')
-#  g$widths <- unit.pmax(gl$widths, g1$widths)
-#  grid.newpage()
-#  grid.draw(g)
-  
-  #grid.arrange(
-  #  grobs = gList(ggplotGrob(p1), ggplotGrob(p2), ggplotGrob(p3)),
-  #  widths = c(1, 1),
-  #  layout_matrix = rbind(rbind(c(1, 1),
-  #                              c(2, 3))))
+getMode <- function(v) {
+  uniqv <- unique(v)
+  return(uniqv[which.max(tabulate(match(v, uniqv)))])
 }

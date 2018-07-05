@@ -41,9 +41,9 @@ for (i in 1:length(countries)) {
 
 numberOfDiffs = matrix(nrow = length(countries), ncol = 3)
 for (i in 1:length(countries)) {
-  #createAutocorrelationPlot(trainingset[[i]], countries[[i]][1]) %>%
+  createAutocorrelationPlot(trainingset[[i]], countries[[i]][1]) %>%
   #ggexport(filename=paste(c("AC", countries[[i]][1], ".pdf"), collapse=""))
-  #  print()
+    print()
   t   <- "level"
   md  <- 3
   alp <- 0.05
@@ -56,6 +56,18 @@ for (i in 1:length(countries)) {
   print(getMode(numberOfDiffs[i, ]))
 }
 
+models <- list()
+for (i in 1:length(countries)) {
+  models[[i]] <- list()
+  models[[i]][1] <- Arima(trainingset[[i]]$TFR, order = c(0, 1, 0),
+                          method = "ML")
+  models[[i]][2] <- Arima(trainingset[[i]]$TFR, order = c(0, 1, 1),
+                          method = "ML")
+  models[[i]][3] <- Arima(trainingset[[i]]$TFR, order = c(1, 1, 0),
+                          method = "ML")
+  models[[i]][4] <- Arima(trainingset[[i]]$TFR, order = c(1, 1, 1),
+                          method = "ML")
+}
 
 n <- nrow(data[[1]])-10
 window(data[1], end=n)

@@ -42,8 +42,9 @@ for (i in 1:length(countries)) {
 numberOfDiffs = matrix(nrow = length(countries), ncol = 3)
 for (i in 1:length(countries)) {
   createAutocorrelationPlot(trainingset[[i]], countries[[i]][1]) %>%
-  #ggexport(filename=paste(c("AC", countries[[i]][1], ".pdf"), collapse=""))
-    print()
+  #ggexport(filename=paste(c("AC", countries[[i]][1], ".pdf"), collapse=""),
+  #         width=5.83, height=8.27)
+  print()
   t   <- "level"
   md  <- 3
   alp <- 0.05
@@ -59,15 +60,23 @@ for (i in 1:length(countries)) {
 models <- list()
 for (i in 1:length(countries)) {
   models[[i]] <- list()
-  models[[i]][1] <- Arima(trainingset[[i]]$TFR, order = c(0, 1, 0),
+  models[[i]][[1]] <- Arima(trainingset[[i]]$TFR, order = c(0, 1, 0),
                           method = "ML")
-  models[[i]][2] <- Arima(trainingset[[i]]$TFR, order = c(0, 1, 1),
+  models[[i]][[2]] <- Arima(trainingset[[i]]$TFR, order = c(0, 1, 1),
                           method = "ML")
-  models[[i]][3] <- Arima(trainingset[[i]]$TFR, order = c(1, 1, 0),
+  models[[i]][[3]] <- Arima(trainingset[[i]]$TFR, order = c(1, 1, 0),
                           method = "ML")
-  models[[i]][4] <- Arima(trainingset[[i]]$TFR, order = c(1, 1, 1),
+  models[[i]][[4]] <- Arima(trainingset[[i]]$TFR, order = c(1, 1, 1),
                           method = "ML")
 }
+
+accuracy(f = forecast(models[[1]][[4]], h = length(validationset[[1]]$TFR)),
+         x = validationset[[1]]$TFR)
+
+for (i in 1:length(countries)) {
+  
+}
+
 
 n <- nrow(data[[1]])-10
 window(data[1], end=n)

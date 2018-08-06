@@ -61,22 +61,41 @@ models <- list()
 for (i in 1:length(countries)) {
   models[[i]] <- list()
   models[[i]][[1]] <- Arima(trainingset[[i]]$TFR, order = c(0, 1, 0),
-                          method = "ML")
+                            method = "ML")
   models[[i]][[2]] <- Arima(trainingset[[i]]$TFR, order = c(0, 1, 1),
-                          method = "ML")
-  models[[i]][[3]] <- Arima(trainingset[[i]]$TFR, order = c(1, 1, 0),
-                          method = "ML")
-  models[[i]][[4]] <- Arima(trainingset[[i]]$TFR, order = c(1, 1, 1),
-                          method = "ML")
+                            method = "ML")
+  models[[i]][[3]] <- Arima(trainingset[[i]]$TFR, order = c(0, 1, 2),
+                            method = "ML")
+  models[[i]][[4]] <- Arima(trainingset[[i]]$TFR, order = c(1, 1, 0),
+                            method = "ML")
+  models[[i]][[5]] <- Arima(trainingset[[i]]$TFR, order = c(1, 1, 1),
+                            method = "ML")
+  models[[i]][[6]] <- Arima(trainingset[[i]]$TFR, order = c(1, 1, 2),
+                            method = "ML")
+  models[[i]][[7]] <- Arima(trainingset[[i]]$TFR, order = c(2, 1, 0),
+                            method = "ML")
+  models[[i]][[8]] <- Arima(trainingset[[i]]$TFR, order = c(2, 1, 1),
+                            method = "ML")
+  models[[i]][[9]] <- Arima(trainingset[[i]]$TFR, order = c(2, 1, 2),
+                            method = "ML")
 }
 
-accuracy(f = forecast(models[[1]][[4]], h = length(validationset[[1]]$TFR)),
-         x = validationset[[1]]$TFR)
-
+write("Country;Order;AICc;RMSE;AIC;BIC", file = "accuracies.csv")
 for (i in 1:length(countries)) {
-  
+  w  <- paste(countries[[i]][[1]], ";", sep = "")
+  for (j in 1:length(models[[i]])) {
+    if(j!=1) {w <- ";"}
+    cur <- models[[i]][[j]]
+    w   <- paste(w, "(",     cur$arma[1],
+                 ", 1, " ,cur$arma[2], ")", sep = "")
+    acc <- accuracy(f = forecast(cur,
+                                 h = length(validationset[[i]]$TFR)),
+                    x = validationset[[i]]$TFR)
+    w   <- paste(w, cur$aicc, acc[4], cur$aic, cur$bic, sep = ";")
+    w   <- paste(w, "", sep = "")
+    write(w, file = "accuracies.csv", append = TRUE)
+  }
 }
-
 
 n <- nrow(data[[1]])-10
 window(data[1], end=n)

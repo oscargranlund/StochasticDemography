@@ -96,6 +96,8 @@ for (i in 1:length(countries)) {
     write(w, file = "accuracies.csv", append = TRUE)
   }
 }
+# Based upon scoring models based upon AICc and RMSE_Test
+finalmodel = c(1, 1, 0)
 
 n <- nrow(data[[1]])-10
 window(data[1], end=n)

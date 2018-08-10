@@ -25,3 +25,22 @@ getMode <- function(v) {
   uniqv <- unique(v)
   return(uniqv[which.max(tabulate(match(v, uniqv)))])
 }
+
+writeAccuracies <- function (f, validationset, models, countries) {
+  write("Country;Order;AICc;RMSE;AIC;BIC", file = f)
+  for (i in 1:length(countries)) {
+    w  <- paste(countries[[i]][[1]], ";", sep = "")
+    for (j in 1:length(models[[i]])) {
+      if(j!=1) {w <- ";"}
+      cur <- models[[i]][[j]]
+      w   <- paste(w, "(",     cur$arma[1],
+                   ", 1, " ,cur$arma[2], ")", sep = "")
+      acc <- accuracy(f = forecast(cur,
+                                   h = length(validationset[[i]]$TFR)),
+                      x = validationset[[i]]$TFR)
+      w   <- paste(w, cur$aicc, acc[4], cur$aic, cur$bic, sep = ";")
+      w   <- paste(w, "", sep = "")
+      write(w, file = f, append = TRUE)
+    }
+  }
+}

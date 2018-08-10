@@ -80,29 +80,43 @@ for (i in 1:length(countries)) {
                             method = "ML")
 }
 
-write("Country;Order;AICc;RMSE;AIC;BIC", file = "accuracies.csv")
-for (i in 1:length(countries)) {
-  w  <- paste(countries[[i]][[1]], ";", sep = "")
-  for (j in 1:length(models[[i]])) {
-    if(j!=1) {w <- ";"}
-    cur <- models[[i]][[j]]
-    w   <- paste(w, "(",     cur$arma[1],
-                 ", 1, " ,cur$arma[2], ")", sep = "")
-    acc <- accuracy(f = forecast(cur,
-                                 h = length(validationset[[i]]$TFR)),
-                    x = validationset[[i]]$TFR)
-    w   <- paste(w, cur$aicc, acc[4], cur$aic, cur$bic, sep = ";")
-    w   <- paste(w, "", sep = "")
-    write(w, file = "accuracies.csv", append = TRUE)
-  }
-}
-# Based upon scoring models based upon AICc and RMSE_Test
-finalmodel = c(1, 1, 0)
+# Writing accuracies to datafile for tabulation in excel/latex
+writeAccuracies("accuracies.csv", validationset, models, countries)
 
-n <- nrow(data[[1]])-10
-window(data[1], end=n)
-length(data[[1]])
-nrow(data[[1]])
+# Based upon scoring models according to their realtive AICc and RMSE_Test
+fm <- c(1, 1, 0)
+finalmodels <- list()
+for (i in 1:length(countries)) {
+  curts <- na.omit(trainingset[[i]])
+  curvs <- validationset[[i]]
+  cur   <- rbind(curts, curvs)
+  finalmodels[[i]] <- Arima(cur$TFR, order = fm, method = "ML")
+  df1  <- data.frame(time = seq(cur$Year[1],
+                               tail(cur$Year, n = 1)),
+                    M = cur$TFR, ident = "Data")
+  fc1  <- forecast(models[[i]][[4]], h = length(curvs$Year))
+  del1 <- seq(curvs$Year[1], tail(curvs$Year, n = 1))
+  df2  <- data.frame(time = del1, M = fc1$mean,      ident = "Forecast 1")
+  df3  <- data.frame(time = del1, M = fc1$upper[,1], ident = "Upper 80% 1")
+  df4  <- data.frame(time = del1, M = fc1$upper[,2], ident = "Upper 95% 1")
+  df5  <- data.frame(time = del1, M = fc1$lower[,1], ident = "Lower 80% 1")
+  df6  <- data.frame(time = del1, M = fc1$lower[,2], ident = "Lower 95% 1")
+  ahea <- 10
+  fc2  <- forecast(finalmodels[[i]], h = ahea)
+  del2 <- seq(tail(curvs$Year, n = 1), tail(curvs$Year, n = 1) + ahea - 1)
+  df7  <- data.frame(time = del2, M = fc2$mean,      ident = "Forecast 2")
+  df8  <- data.frame(time = del2, M = fc2$upper[,1], ident = "Upper 80% 2")
+  df9  <- data.frame(time = del2, M = fc2$upper[,2], ident = "Upper 95% 2")
+  df10 <- data.frame(time = del2, M = fc2$lower[,1], ident = "Lower 80% 2")
+  df11 <- data.frame(time = del2, M = fc2$lower[,2], ident = "Lower 95% 2")
+  df   <- rbind(df1, df2, df3, df4, df5, df6, df7, df8, df9, df10, df11)
+  p <- ggplot(df, aes(x = time, y = M, color = ident)) + geom_line()
+  print(p)
+}
+
+fcv <- forecast(finalmodels[[1]], h = 10)
+plot(data[[2]])
+
 # Not working
 #arimamodel <- arima(finlanddata["TFR"])
 #finlanddata['armodel'] <- predict(arimamodel)

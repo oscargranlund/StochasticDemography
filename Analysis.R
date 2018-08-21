@@ -99,8 +99,16 @@ for (i in 1:length(countries)) {
 
 pf <- ggarrange(p[[1]], p[[2]], p[[3]], p[[4]], p[[5]], p[[6]], p[[7]], p[[8]],
                 ncol = 2, nrow = 4) %>%
-ggexport(filename = "arima110Forecasts.pdf", width = 8.27, height = 11.69)
-#print()
+#ggexport(filename = "arima110Forecasts.pdf", width = 8.27, height = 11.69)
+print()
+
+for (i in 1:length(countries)) {
+  
+}
+for (h in 1:50) {
+  print(Box.test(finalmodels[[i]]$residuals, type = "Ljung-Box", lag = h, fitdf = 1))
+}
+
 
 # Not working
 #arimamodel <- arima(finlanddata["TFR"])

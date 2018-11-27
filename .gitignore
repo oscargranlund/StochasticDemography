@@ -3,7 +3,7 @@
 *.gz
 *.txt
 .Rproj.user
-*.pdf
 .Rhistory
 *.csv
 ~$*.xlsx
+*.out

@@ -4,7 +4,7 @@
 \setkomafont{title}{\rmfamily}
 \addtokomafont{disposition}{\rmfamily}
 
-\usepackage[swedish]{babel}
+\usepackage[english]{babel}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage[utf8]{inputenc}
@@ -25,8 +25,8 @@
 
 \usepackage{placeins}
 %opening
-\title{{\Large \textbf{Introduction to Stochastic Demography Project\\
-Forecasting the Total Fertility Rate in some European countries}}}
+\title{{\large \textbf{Introduction to Stochastic Demography Project}}\\
+{\Large \textbf{Forecasting the Total Fertility Rate in some European countries}}}
 \author{{\large Oscar Granlund}\\
 {\large 37920}}
 \date{}
@@ -37,5 +37,105 @@ Forecasting the Total Fertility Rate in some European countries}}}
 
 
 \section{Introduction}
+In this project we try to find an autoregressive integrated moving average (ARIMA) model for forecasting the Total Fertility Rates (TFR) in 8 different European countries.
+The aim is to find one (hopefully relatively simple) model that as accurately as possible forecasts the TFR in all the countries.
+
+Accurately forecasting the Total Fertility Rate can be important for a variety of reasons, for example in some countries where birth rates are decreasing there are problems where there number of workers per retiree is decreasing and thus the workers have to contribute more; in order to accurately say how much more each worker has to pay, the forecasts of the future number of workers need to be accurate.
+Since pension schemes are often regulated by governments in some way, decisions on changes are often made into political questions and thus the decision to use a particular model for forecasting birth rates are often politically charged and thus simpler models are favoured.
+
+One could also argue that there are underlying factors that determine the TFR but such models will not be considered.
+This choice was made since accurate data for latent factors can be difficult to find while many countries publish relatively accurate data for the TFR and these datasets can easily be found aggregated at \cite{web:TFR}.
+
+\section{Autoregressive Integrated Moving Average models}
+There are many approaches for analysing and forecasting time series but the two most popular approaches are exponential smoothing and autoregressive integrated moving average (ARIMA) models \cite{web:fpp}.
+Exponential smoothing models are based on the trends and seasonality of the data ARIMA models try to describe the autocorrelations of the data.
+For our purposes we will consider only the ARIMA family of models since in some cases choosing an ARIMA model can be interpreted as determining what random process has generated the time series.
+
+\subsection{Autoregressive models}
+An autoregressive (AR) model is where the forecast for the value of the next point is a linear combination of the values of the past points or in other words, the time series is a linear regression of itself or auto(self)-regressive(regression).
+Mathematically we write the forecasted value $y_t$ in the following way:
+\begin{equation*}
+	y_t = \phi_0 + \phi_1y_{t-1} + \phi_2y_{t-2}+\dots+\phi_py_{t-p}+\varepsilon_t
+\end{equation*}
+where $p$ is the order of autoregression and $\varepsilon_t$ is an error term ( some random variable).
+
+The optimal model (in terms of minimizing the sum of the squared residuals) can be found by defining the following vectors and matrices
+\begin{equation*}
+	\mathbf{y}=\begin{bmatrix}
+	y_N\\
+	y_{N-1}\\
+	\vdots\\
+	y_{p+2}\\
+	y_{p+1}
+	\end{bmatrix},\quad \mathbf{X}=\begin{bmatrix}
+	1 & y_{N-1} & y_{N-2} & \cdots & y_{N-p+1}& y_{N-p}\\
+	1 & y_{N-2} & y_{N-3} & \cdots & y_{N-p}& y_{N-p-1}\\
+	\vdots& \vdots &	  & 	   &		& \vdots\\
+	1 & y_{p+1} & y_{p} & \cdots & y_{3}& y_{2}\\
+	1 & y_{p} & y_{p-1} & \cdots & y_{2}& y_{1}
+	\end{bmatrix}
+\end{equation*}
+and solving the equation $\mathbf{y}=\mathbf{X}\boldsymbol{\phi}$ for the least-squares solution (with respect to $\boldsymbol{\phi}$) $\boldsymbol{\phi}=\left(\mathbf{X}^\intercal\mathbf{X}\right)^{-1}\mathbf{X}^\intercal\mathbf{y}$.
+Note the absence of the first $p$ $y_t$:terms in the vector $\mathbf{y}$ and the absence of the $y_N$ term in the matrix $\mathbf{X}$, clearly we might not be using all the information known to us using this solution.
+For example all $N$ datapoints can be used to determine the coefficient $\phi_0$ (the intercept or mean level).
+
+We might also need to impose restrictions on the coefficients $\phi_i$ if we assume additional things about the underlying data, for example if we assume the random process is \emph{stationary} we need to impose the constraint $-1<\phi_1<1$ for an autoregressive model of order 1 (AR(1) model).
+Because of this the naive ordinary least squares solution is usually not used, instead a system of equations called the Yule-Walker equations are solved.
+The Yule-Walker equations are based upon the autocorrelations of the data.
+
+The projection for the next datapoint $\hat{y}_{N+1}$ are given by \begin{equation*}
+\hat{y}_{N+1}=\phi_0+\phi_1y_N+\phi_2y_{N-1}+\dots+\phi_{p-1}y_{N-p+2}+\phi_py_{N-p+1}
+\end{equation*}
+for two steps ahead we use the projected value $\hat{y}_{N+1}$ instead the observed value $y_{N+1}$ (of course, at time $N$ we don't have an observed value at for time $N+1$).
+This way of projecting forwards is a commonly used technique in time series forecasting.
+
+\subsection{Moving Average models}
+The moving average (MA) model is a bit more complex than the AR models.
+Here the idea is that instead of regressing on past values we regress on past forecast errors.
+Mathematically we write the MA model of order $q$ (the MA($q$) model) in the following way:
+\begin{equation*}
+	y_t=\theta_0+\theta_1\varepsilon_{t-1}+\theta_2\varepsilon_{t-2}+\dots+\theta_q\varepsilon_{t-q}+\varepsilon_t
+\end{equation*}
+where the terms $\varepsilon_t$, $t=1,\dots,N$ are the errors.
+Note here that the errors are not really ``observed'' in the same sense that the values $y_t$ are observed.
+Instead we can get observed errors by having some forecast $\hat{y}_t$ and setting $\varepsilon_t=\hat{y}_t-y_t$.
+This means that the errors depend on the forecast but the forecast also depends on the errors so a regular OLS method will not work that well.
+
+An interesting observation is that any \emph{stationary} AR($p$) model can be written as a MA($\infty$) model.
+For example an AR(1) model with $\phi_0=0$ (centred) can be written in the following way:
+\begin{align*}
+	y_t&=\phi_1y_{t-1}+\varepsilon_t\\
+	&=\phi_1\left(\phi_1y_{t-2}+\varepsilon_{t-1}\right)+\varepsilon_t\\
+	&=\phi_1^2y_{t-2}+\phi_1\varepsilon_{t-1}+\varepsilon_t\\
+	&=\phi_1^2\left(\phi_1y_{t-3}+\varepsilon_{t-2}\right)+\phi_1\varepsilon_{t-1}+\varepsilon_t\\
+	&=\phi^3_1y_{t-3}+\phi_1^2\varepsilon_{t-2}+\phi_1\varepsilon_{t-1}+\varepsilon_t
+\end{align*}
+and so on, ending up with
+\begin{equation*}
+	y_t=\sum_{i=0}^{\infty}\varepsilon_{t-i}\phi^i_1
+\end{equation*}
+which converges if $|\phi_1|<1$ which was our constraint for stationary AR(1) processes.
+
+The converse result is true for some MA processes; in other words some MA($q$) can be written as AR($\infty$) processes.
+Such processes are called invertible and they give us a way to write the current error $\varepsilon_t$ as a linear function of current and past observations $y_i$, $i=1,\dots,t$.
+For a centred MA($q$) process we get
+\begin{equation*}
+	\varepsilon_t=\sum_{i=0}^{\infty}\left(-\theta_1\right)^iy_{t-i}
+\end{equation*}
+where again we need the constraint $|\theta_1|<1$.
+This is the condition for a MA($q$) process being invertible.
+
+Of course, we will never have infinitely many datapoints but the results for the infinite cases are still usable in the finite case.
+
+\subsection{Differencing a time series and stationarity}
+
+
+\begin{thebibliography}{2}
+	\bibitem{web:TFR} \emph{Human Fertility Database}. Max Planck Institute for Demographic Research (Germany) and Vienna Institute of Demography (Austria). Available at \href{www.humanfertility.org}{www.humanfertility.org}. Acceessed at 19.05.2018.
+	
+	\bibitem{web:fpp} Hyndman, R.J., \& Athanasopoulos, G. (2018) \emph{Forecasting: principles and practice}, 2nd edition, OTexts: Melbourne, Australia. \href{https://otexts.com/fpp2/}{OTexts.com/fpp2}. Accessed on 08.05.2019.
+\end{thebibliography}
+
+
 
 \end{document}

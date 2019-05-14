@@ -128,7 +128,26 @@ This is the condition for a MA($q$) process being invertible.
 Of course, we will never have infinitely many datapoints but the results for the infinite cases are still usable in the finite case.
 
 \subsection{Differencing a time series and stationarity}
+We have seen that a concept called stationarity seems to be important for time series forecasting so perhaps we should give a definition:
 
+A time series $y_t$ is stationary if the properties of the time series do not change with time.
+This will be the case if for all $s$, the distribution of $\left(y_t, \dots,y_{t+s}\right)$ does not depend on $t$.
+
+Since the assumption of stationarity is so important there are techniques for transforming non-stationary time series into stationary time series.
+One such technique is \emph{differencing} a time series, where we instead of considering $y_t$ consider the time series $y_t'=y_t-y_{t-1}$.
+
+If $y_t'=y_t-y_{t-1} = \varepsilon_t$ is white noise, we have a model called the random walk model where we can write $y_t=y_{t-1} + \varepsilon_t$.
+This is one of the simplest non-stationary models but still one of the most widely used ones.
+
+If differencing once is not enough we can take the differences of the differenced time series and create the time series $y_t''=y_t'-y_{t-1}'=y_t-2y_{t-1}+y_{t-2}$.
+Higher orders if differencing might also be necessary.
+
+To describe differenced time series we often use the \emph{backshift operator} $B$.
+The backshift operator $B$ is the operator such that $By_t=y_{t-1}$.
+Now applying the backshift operator twice, using standard notation, we see that $B(By_t)=B^2y_t=y_{t-2}$ and we can write the first difference $y_t'=y_t-y_{t-1}$ as the operator equation $(1-B)y_t=y_t-y_{t-1}$ and similarly the second difference as $y_t''=(1-B)^2y_t=(1-2B+B^2)y_t=y_t-2y_{t-1}+y_{t-2}$.
+Thus the $d$th-order difference is given by the operator $(1-B)^d$.
+
+\subsection{The ARIMA model and selecting parameters}
 
 \begin{thebibliography}{2}
 	\bibitem{web:TFR} \emph{Human Fertility Database}. Max Planck Institute for Demographic Research (Germany) and Vienna Institute of Demography (Austria). Available at \href{www.humanfertility.org}{www.humanfertility.org}. Acceessed at 19.05.2018.

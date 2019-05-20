@@ -167,13 +167,49 @@ The term integrated comes from the ``de-differencing'' of the estimates that we 
 
 Traditionally when we choose between models that are in some way nested, measures such as the Akaike information criterion (AIC), the corrected Akaike information criterion (AICc) or the Bayesian information criterion (BIC) are useful.
 In this case this is however not an option since these measures of fit and complexity require that the models are fit to the same datasets which is technically not the case here since different orders of differencing $d$ change the data to be fit.
-For a fixed order of differencing $d$ we can still use AIC, AICc or BIC to chose the best model so we first need to determine the order of differencing.
+For a fixed order of differencing $d$ we can still use AIC, AICc or BIC to choose the best model so we first need to determine the order of differencing.
+
+In order to determine the order of differencing we can use tests for stationarity (really they are called unit root tests) for many orders $d$ until we find the lowest order $d$ such that the series $(1-B)^dy$ is stationary.
+There are a couple of different test for stationarity, among the most popular are the Kwiatkowski–Phillips–Schmidt–Shin (KPSS), augmented Dickey–Fuller (ADF) and Phillips–Perron (PP) tests.
+
+Once the order of differencing $d$ has been determined, we try to determine the rest of the parameters $p$ and $q$, this can be done by fitting some initial models, selecting the best one (using AIC, AICc or BIC) and then varying $p$ and $q$ by $\pm 1$ and including/excluding the drift constant $c$.
+This process of selecting the best model and searching it's ``neighbouring'' models for a better one until no new better model can be found.
+
+Hyndman and Khandakar \cite{art:hyndkhand} suggest using the following approach:
+\begin{enumerate}
+	\item Determine the order of differencing $0\leq d \leq 2$ using repeated KPSS tests.
+	\item Fit 4 initial models:
+	\begin{itemize}
+		\item ARIMA(0, $d$, 0),
+		\item ARIMA(2, $d$, 2),
+		\item ARIMA(1, $d$, 0) and
+		\item ARIMA(0, $d$, 1),
+	\end{itemize}
+	without constants if $d=2$. If $d\leq 1$ fit the previous models but also the first one again but without a constant.
+	\item Select the best model of the previously fitted ones using the AICc (smallest AICc is best).
+	\item Fit the new models ARIMA($p\pm1$, $d$, $q\pm1$) where $p$ and $q$ are the values that gave the previous best model. Also fit the same models including/excluding the constants.
+	\item Repeat from step 2 until no better model can be found (e.g. when the same model is chosen as the best one twice in a row).
+\end{enumerate}
+
+Another approach to selecting the correct parameters (including the order of differencing) would be to have a hold-out set of the $k$ last observations (a validation set), fitting the models to only the first $N-k$ observations (a training set).
+Then the forecast on the validation set and corresponding residuals can be used to chose the model ARIMA($p,~d,~q$) with lowest root mean squared residuals.
+The search can be done in the same stepwise fashion as previously suggested using the RMS of the residuals on the validation set instead of the AICc criteria to select the best model.
+In this way the order of differencing $d$ can also be selected.
+A drawback is that if models are not constant throughout time then the suggested model might not be valid for future forecasts.
+Another drawback is that we have less data to fit the ARIMA models to.
+
+A third way of selecting the parameters is to look at autocorrelation and partial autocorrelation plots of the time series and using these specifying a model according to some rules.
+While similar approaches can be useful confirming that a model is sound it is not very well suited for automatic model selection so we will ignore it for now.
+
+
 
 
 \begin{thebibliography}{2}
 	\bibitem{web:TFR} \emph{Human Fertility Database}. Max Planck Institute for Demographic Research (Germany) and Vienna Institute of Demography (Austria). Available at \href{www.humanfertility.org}{www.humanfertility.org}. Accessed at 19.05.2018.
 	
-	\bibitem{web:fpp} Hyndman, R.J., \& Athanasopoulos, G. (2018) \emph{Forecasting: principles and practice}, 2nd edition, OTexts: Melbourne, Australia. \href{https://otexts.com/fpp2/}{OTexts.com/fpp2}. Accessed on 08.05.2019.
+	\bibitem{web:fpp} Hyndman, R.J., \& Athanasopoulos, G. (2018). \emph{Forecasting: principles and practice}, 2nd edition, OTexts: Melbourne, Australia. \href{https://otexts.com/fpp2/}{OTexts.com/fpp2}. Accessed on 08.05.2019.
+	
+	\bibitem{art:hyndkhand} Hyndman, R. J., \& Khandakar, Y. (2008). \emph{Automatic time series forecasting: The forecast package for R.} Journal of Statistical Software, 27(1), 1–22.
 \end{thebibliography}
 
 

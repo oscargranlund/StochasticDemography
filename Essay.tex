@@ -15,7 +15,36 @@
 \usepackage{amsthm}
 
 \usepackage{hyperref}
+\usepackage{listings}
+\usepackage{color}
 
+\usepackage{appendix}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+	backgroundcolor=\color{backcolour},   
+	commentstyle=\color{codegreen},
+	keywordstyle=\color{magenta},
+	numberstyle=\tiny\color{codegray},
+	stringstyle=\color{codepurple},
+	basicstyle=\footnotesize\ttfamily,
+	breakatwhitespace=true,         
+	breaklines=true,                 
+	captionpos=b,                    
+	keepspaces=true,                 
+	numbers=left,                    
+	numbersep=5pt,                  
+	showspaces=false,                
+	showstringspaces=false,
+	showtabs=false,                  
+	tabsize=2
+}
+
+\lstset{style=mystyle}
 \usepackage{icomma}
 
 \usepackage{graphicx}
@@ -175,7 +204,7 @@ There are a couple of different test for stationarity, among the most popular ar
 Once the order of differencing $d$ has been determined, we try to determine the rest of the parameters $p$ and $q$, this can be done by fitting some initial models, selecting the best one (using AIC, AICc or BIC) and then varying $p$ and $q$ by $\pm 1$ and including/excluding the drift constant $c$.
 This process of selecting the best model and searching it's ``neighbouring'' models for a better one until no new better model can be found.
 
-Hyndman and Khandakar \cite{art:hyndkhand} suggest using the following approach:
+Hyndman and Khandakar \cite{art:hyndkhand} suggest using the following approach for automatically fitting an ARIMA($p,~d,~q$) model to a dataset:
 \begin{enumerate}
 	\item Determine the order of differencing $0\leq d \leq 2$ using repeated KPSS tests.
 	\item Fit 4 initial models:
@@ -193,7 +222,7 @@ Hyndman and Khandakar \cite{art:hyndkhand} suggest using the following approach:
 
 Another approach to selecting the correct parameters (including the order of differencing) would be to have a hold-out set of the $k$ last observations (a validation set), fitting the models to only the first $N-k$ observations (a training set).
 Then the forecast on the validation set and corresponding residuals can be used to chose the model ARIMA($p,~d,~q$) with lowest root mean squared residuals.
-The search can be done in the same stepwise fashion as previously suggested using the RMS of the residuals on the validation set instead of the AICc criteria to select the best model.
+The search can be done in the same stepwise fashion as previously suggested using the RMS residuals on the validation set instead of the AICc criteria to select the best model.
 In this way the order of differencing $d$ can also be selected.
 A drawback is that if models are not constant throughout time then the suggested model might not be valid for future forecasts.
 Another drawback is that we have less data to fit the ARIMA models to.
@@ -201,15 +230,114 @@ Another drawback is that we have less data to fit the ARIMA models to.
 A third way of selecting the parameters is to look at autocorrelation and partial autocorrelation plots of the time series and using these specifying a model according to some rules.
 While similar approaches can be useful confirming that a model is sound it is not very well suited for automatic model selection so we will ignore it for now.
 
+\section{Forecasting the Total Fertility Rate in eight European countries}
+For our purposes (finding one ARIMA($p,~d,~q$) model that fits many time series as well as possible) we can't really fit the models individually using the procedure suggested above.
+Instead we can try something similar by trying to modify the procedure to work for multiple time series.
 
+From \cite{web:TFR} we downloaded data for the Total Fertility Rate in 8 countries, tabulated in table \ref{tbl:countries}.
+The validation set was set to be the years from 2010 onwards and the training set was set to start no earlier than 1900 (impacting only Sweden).
+The countries chosen are such that they have at least 50 data points for training, also trying to sample uniformly geographically as well as ``economically''.
+\begin{table}
+	\centering
+	\label{tbl:countries}
+	\begin{tabular}{l | r r r r r r r r}
+		Country & \multicolumn{1}{l}{Finland} & \multicolumn{1}{l}{Sweden} & \multicolumn{1}{l}{Estonia} & \multicolumn{1}{l}{England} & \multicolumn{1}{l}{France} & \multicolumn{1}{l}{Switzer-} & \multicolumn{1}{l}{Italy} & \multicolumn{1}{l}{Spain}\\
+		& & & & \multicolumn{1}{l}{and Wales} & & \multicolumn{1}{l}{land} & & \\
+		\hline
+		First year & 1939 & 1891 & 1959 & 1938 & 1946 & 1932 & 1954 & 1922\\
+		Last year & 2015 & 2016 & 2014 & 2014 & 2015 & 2014 & 2014 & 2014\\
+		$n$ & 77 & 126 & 56 & 77 & 70 & 83 & 61 & 93
+	\end{tabular}
+		\caption{Table showing the countries used and the extent of their datasets.}
+\end{table}
 
+\subsection{Determining the order of differencing}
+In order to determine the order of differencing we use all three tests and take the mode of their suggestions.
+We also restrict the maximum number of differencing to 3 and set the $\alpha$ values of the tests to 0.05.
+In listing \ref{lst:numdiffs} the code for computing the optimal number of differences for each country is shown.
+Table \ref{tbl:numdiffs} shows the suggested number of differences for each country and test-type.
 
-\begin{thebibliography}{2}
+\begin{lstlisting}[language=R, caption={R-code for computing all suggested differences.}, label={lst:numdiffs}]
+numberOfDiffs = matrix(nrow = length(countries), ncol = 3)
+for (i in 1:length(countries)) {
+	createAutocorrelationPlot(trainingset[[i]], countries[[i]][1]) %>%
+	print()
+	t   <- "level"
+	md  <- 3
+	alp <- 0.05
+	numberOfDiffs[i, 1] <- ndiffs(trainingset[[i]]$TFR, test = "kpss", type = t, max.d = md, alpha = alp)
+	numberOfDiffs[i, 2] <- ndiffs(trainingset[[i]]$TFR, test = "adf",  type = t, max.d = md, alpha = alp)
+	numberOfDiffs[i, 3] <- ndiffs(trainingset[[i]]$TFR, test = "pp",   type = t, max.d = md, alpha = alp)
+	print(getMode(numberOfDiffs[i, ]))
+}
+\end{lstlisting}
+\begin{table}[b]
+	\centering
+	\label{tbl:numdiffs}
+	\begin{tabular}{l | r r r r}
+		Country & \multicolumn{1}{l}{KPSS} & \multicolumn{1}{l}{ADF} & \multicolumn{1}{l}{PP} & \multicolumn{1}{l}{Mode}\\
+		\hline
+		Finland		& 1 & 1 & 1 & 1\\
+		Sweden 		& 1 & 1 & 1 & 1\\
+		Estonia		& 1 & 2 & 1 & 1\\
+		England and Wales & 1 & 1 & 1 & 1\\
+		France		& 1 & 1 & 1 & 1\\
+		Switzerland & 1 & 2 & 1 & 1\\
+		Italy		& 1 & 2 & 1 & 1\\
+		Spain		& 1 & 1 & 1 & 1
+	\end{tabular}
+	\caption{Table showing results of the differencing calculation.}
+\end{table}
+
+Autocorrelationplots to confirm that the differenced series look reasonable were also created as a part of the R-code in listing \ref{lst:numdiffs}.
+These plots can be found in Appendix \ref{app:autocorrelationplots}.
+
+\subsection{Finding the optimal model}
+Now that the correct order of differencing has been found, we start by fitting 9 ARIMA($p,~1,~q$) models to each of the countries validation sets  by setting $p,~q=0,~1,~2$.
+From here the accuracies of each model in terms of AICc and RMSE (on the validation set) was recorded.
+The models were then scored by scaling their AICc and RMSE measures so that for each country, the model that performed the best on AICc/RMSE got 1 point and the model that performed the worst got 0 points.
+In other words, the following equation was used (where $s_{\mathcal{M},\mathrm{C}}$ is the AICc or RMSE of a particular model $\mathcal{M}$ in a particular country $\mathrm{C}$ and $s_{\mathcal{M},\mathrm{C}}'$ is the scaled version)
+\begin{equation*}
+	s_{\mathcal{M},\mathrm{C}}'=\frac{\max_\mathcal{M}(s_{\mathcal{M},\mathrm{C}})-s_{\mathcal{M},\mathrm{C}}}{\max_\mathcal{M}(s_{\mathcal{M},\mathrm{C}})-\min_\mathcal{M}(s_{\mathcal{M},\mathrm{C}})}.
+\end{equation*}
+The two scores for each model and country were then summed and a final score for a model $\mathcal{M}$ was found by summing all the scaled and summed scores over the countries.
+The result of this can be seen in table \ref{tbl:scores}.
+
+\newpage
+\appendix
+\appendixpage
+\section{Autocorrelation plots}\label{app:autocorrelationplots}
+\begin{figure}[h!]
+	\centering
+	\includegraphics[height=0.85\textwidth, angle=-90]{ACFinland}
+	\includegraphics[height=0.85\textwidth, angle=-90]{ACSweden}
+\end{figure}
+\begin{figure}[h!]
+	\centering
+	\includegraphics[height=0.85\textwidth, angle=-90]{ACEstonia}
+	\includegraphics[height=0.85\textwidth, angle=-90]{"ACEngland and Wales".pdf}
+\end{figure}
+\begin{figure}[h!]
+	\centering
+	\includegraphics[height=0.85\textwidth, angle=-90]{ACFrance}
+	\includegraphics[height=0.85\textwidth, angle=-90]{ACSwitzerland}
+\end{figure}
+\begin{figure}[h!]
+	\centering
+	\includegraphics[height=0.85\textwidth, angle=-90]{ACItaly}
+	\includegraphics[height=0.85\textwidth, angle=-90]{ACSpain}
+\end{figure}
+\FloatBarrier
+\newpage
+\section{R-code}
+
+\newpage
+\begin{thebibliography}{3}
 	\bibitem{web:TFR} \emph{Human Fertility Database}. Max Planck Institute for Demographic Research (Germany) and Vienna Institute of Demography (Austria). Available at \href{www.humanfertility.org}{www.humanfertility.org}. Accessed at 19.05.2018.
 	
 	\bibitem{web:fpp} Hyndman, R.J., \& Athanasopoulos, G. (2018). \emph{Forecasting: principles and practice}, 2nd edition, OTexts: Melbourne, Australia. \href{https://otexts.com/fpp2/}{OTexts.com/fpp2}. Accessed on 08.05.2019.
 	
-	\bibitem{art:hyndkhand} Hyndman, R. J., \& Khandakar, Y. (2008). \emph{Automatic time series forecasting: The forecast package for R.} Journal of Statistical Software, 27(1), 1–22.
+	\bibitem{art:hyndkhand} Hyndman, R. J., \& Khandakar, Y. (2008). \emph{Automatic time series forecasting: The forecast package for R.} Journal of Statistical Software, 27(1), 1-22.
 \end{thebibliography}
 
 

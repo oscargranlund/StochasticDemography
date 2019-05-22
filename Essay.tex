@@ -273,7 +273,6 @@ for (i in 1:length(countries)) {
 \end{lstlisting}
 \begin{table}[b]
 	\centering
-	\label{tbl:numdiffs}
 	\begin{tabular}{l | r r r r}
 		Country & \multicolumn{1}{l}{KPSS} & \multicolumn{1}{l}{ADF} & \multicolumn{1}{l}{PP} & \multicolumn{1}{l}{Mode}\\
 		\hline
@@ -286,14 +285,14 @@ for (i in 1:length(countries)) {
 		Italy		& 1 & 2 & 1 & 1\\
 		Spain		& 1 & 1 & 1 & 1
 	\end{tabular}
-	\caption{Table showing results of the differencing calculation.}
+	\caption{Table showing results of the differencing calculation.\label{tbl:numdiffs}}
 \end{table}
 
 Autocorrelationplots to confirm that the differenced series look reasonable were also created as a part of the R-code in listing \ref{lst:numdiffs}.
 These plots can be found in Appendix \ref{app:autocorrelationplots}.
 
 \subsection{Finding the optimal model}
-Now that the correct order of differencing has been found, we start by fitting 9 ARIMA($p,~1,~q$) models to each of the countries validation sets  by setting $p,~q=0,~1,~2$.
+Now that the correct order of differencing has been found, we start by fitting 9 ARIMA models to each of the countries validation sets  by setting $p,~q=0,~1,~2$.
 From here the accuracies of each model in terms of AICc and RMSE (on the validation set) was recorded.
 The models were then scored by scaling their AICc and RMSE measures so that for each country, the model that performed the best on AICc/RMSE got 1 point and the model that performed the worst got 0 points.
 In other words, the following equation was used (where $s_{\mathcal{M},\mathrm{C}}$ is the AICc or RMSE of a particular model $\mathcal{M}$ in a particular country $\mathrm{C}$ and $s_{\mathcal{M},\mathrm{C}}'$ is the scaled version)
@@ -302,6 +301,66 @@ In other words, the following equation was used (where $s_{\mathcal{M},\mathrm{C
 \end{equation*}
 The two scores for each model and country were then summed and a final score for a model $\mathcal{M}$ was found by summing all the scaled and summed scores over the countries.
 The result of this can be seen in table \ref{tbl:scores}.
+\begin{table}
+	\centering
+	\begin{tabular}{l|rrr}
+		Model & \multicolumn{1}{l}{Sum of} & \multicolumn{1}{l}{Sum of} & \multicolumn{1}{l}{Final score}\\
+		& \multicolumn{1}{l}{scaled AICc} & \multicolumn{1}{l}{scaled RMSE} &\\
+		\hline
+		$( 0 ,~ 1 ,~ 0 )$ &0.634 &	5.361 &	~5.995\\
+		$( 0 ,~ 1 ,~ 1 )$ &4.065 &	5.957 &	10.022\\
+		$( 0 ,~ 1 ,~ 2 )$ &5.867 &	4.738 &	10.605\\
+		$( 1 ,~ 1 ,~ 0 )$ &6.227 &	6.956 &	13.184\\
+		$( 1 ,~ 1 ,~ 1 )$ &5.992 &	3.310 & ~9.301\\
+		$( 1 ,~ 1 ,~ 2 )$ &6.129 &	3.501 &	~9.631\\
+		$( 2 ,~ 1 ,~ 0 )$ &6.121 &	3.877 &	~9.998\\
+		$( 2 ,~ 1 ,~ 1 )$ &5.622 &	1.924 &	~7.546\\
+		$( 2 ,~ 1 ,~ 2 )$ &5.933 &	3.144 &	~9.077
+	\end{tabular}
+\caption{Table showing the scoring of the different models.\label{tbl:scores}}
+\end{table}
+The scores suggest that $( 1 ,~ 1 ,~ 0 )$ is the best model, winning in both scaled AICc and scaled RMSE as well as overall.
+We have also tested all the alternative $p\pm 1,~q\pm 1$ models so there is no need to extend the search since we seem to be in some optimum.
+
+\subsection{Forecasting using the ARIMA$\boldsymbol{( 1 ,~ 1 ,~ 0 )}$ model}
+Now that we finally have chosen a model for all of the countries in a somewhat systematical way we can use this model to forecast the TFR for the years up to 2020.
+We can also compute the forecast for the years 2010 and onwards to see how well the forecast lines up with the real data in order to get an (informal) idea of how good the forecast is.
+The forecasts are plotted in figure \ref{fig:110forecasts}.
+\begin{figure}[p]
+
+\centering
+\includegraphics[width=0.95\textwidth]{arima110Forecasts.pdf}
+\caption{Plots of the forecasts of the Total Fertility Rate in the 8 countries for the years in the validation sets in blue (orange confidence intervals) as well as a final forecast for 10 years forwards after the end of the validation set in orange (blue confidence intervals).\label{fig:110forecasts}}
+\end{figure}
+
+Looking at the figures we see that the validation set forecast was always within the confidence intervals but the forecast was almost always too high, suggesting that something might be going on that the model does not pick up on.
+We also see that many of the time series follow a similar pattern, with a sharp decline followed by a relatively flat region.
+This suggests that some other kind of model might be better suited for this kind of modelling, for example for the countries that are seen as being not as far along this process of decline followed by stabilisation (and maybe increase) we could smooth, rescale and lag (or move ``forwards'') the forecasts of the countries further along and use that as a forecast.
+
+To further validate the choice of the ARIMA($1,~1,~0$) model one could perform some kind of independence or stationarity test on the residuals.
+For example one could perform a Ljung-Box test on the residuals in order to see if they are significantly different from a process with no serial correlation, e.g. seeing if there is some unexploited structure in the autocorrelations.
+
+\section{Concluding remarks}
+While this kind of modelling did result in a model with a reasonably good fit to the data, this is not a given when using an ARIMA model.
+For example the Total Fertility Rate can never be below zero while if we had a time series consisting of the data up to the middle of the sharp decline in TFR an ARIMA model might very well have forecasted a TFR below zero after 10-25 years which is absurd.
+Perhaps this means that some transformation of the data should have been performed (for example a log or a logit transform).
+
+Following the idea of using a log or a logit transform perhaps there is some generalization of the ARIMA models similar to the generalized linear model or perhaps using a logistic, poisson or an overdispersed poisson regression model using information about the country as latent factors would yield a better result.
+The drawback here would be that the models are more complex, perhaps not as statistically well developed and there are more decisions required during modelling.
+
+One could also criticize the basis of the decisions made during our model-selection step.
+For example there is probably some modification or interpretation similar to the information criteria that would be more suited for judging what stochastic process is likely to have created a number of samples of a time series.
+Or perhaps the assumption that the TFR in different countries follow the same stochastic process is not correct.
+
+There is also a problem with using the unweighed RMSE as a model selection criteria since the validation sets were not all of the same size and the RMSE as an estimate of the models accuracy is therefore not equally accurate in all cases.
+The RMSE could also have been used as the only criterion and then the model search could have been done in a stepwise from start to finish, also searching over the differences but this might require a larger validation set since the RMSE becomes more important as a criteria and therefore also needs to be more accurate.
+This becomes a problem if the kind of stochastic process is not constant.
+
+One could also try to find out if the coefficients produced using our method are the same for all countries, at least for an ARIMA($p,~d,~0$) model (an AR($p$ model in disguise) there should be relatively simple tests for finding out if the coefficients are significantly different.
+Such tests would probably be similar to such kinds of tests for regression models.
+
+In other words, this is one relatively simple way to select one model for many samples of time series that in this case selected a relatively simple model.
+However, there are still many questions left unanswered and even with our method there are still some arbitrarily made decisions regarding what model selection criteria to use.
 
 \newpage
 \appendix
@@ -330,6 +389,182 @@ The result of this can be seen in table \ref{tbl:scores}.
 \FloatBarrier
 \newpage
 \section{R-code}
+\subsection{Analysis.R}
+\begin{lstlisting}[caption={The main code used for the analysis, requires the \texttt{utils.R} file with help functions for IO to be present. Some parts of the code left commented, mostly ones used to write data to disk.}]
+library(forecast)
+library(ggplot2)
+library(ggpubr)
+#library(gridExtra)
+#library(grid)
+#library(gtable)
+#library(egg)
+source("utils.R")
+
+# Please note that the development version of forecast might be needed
+# for ndiffs to work, as per https://github.com/robjhyndman/forecast/issues/695.
+# Install by running
+# devtools::install_github("robjhyndman/forecast")
+# and make sure the devtools are installed before,
+# install.packages("devtools")
+
+countries <- list(
+list("Finland",           "FINtfrRR.txt"    ),
+list("Sweden",            "SWEtfrRR.txt"    ),
+list("Estonia",           "ESTtfrRR.txt"    ),
+list("England and Wales", "GBRTENWtfrRR.txt"),
+list("France",            "FRATNPtfrRR.txt" ),
+list("Switzerland",       "CHEtfrRR.txt"    ),
+list("Italy",             "ITAtfrRR.txt"    ),
+list("Spain",             "ESPtfrRR.txt"    ))
+
+data <- list()
+for (i in 1:length(countries)) {
+	data[[i]] <- read.table(countries[[i]][[2]][1], skip=2, header=TRUE)
+}
+
+trainingStart   <- 1900
+validationStart <- 2010
+trainingset   <- list()
+validationset <- list()
+for (i in 1:length(countries)) {
+	trainingset[[i]]	<- subset(data[[i]], (data[[i]]$Year <  validationStart & data[[i]]&Year	>= trainingStart))
+	trainingset[[i]]	<- na.omit(trainingset[[i]])
+	validationset[[i]]	<- subset(data[[i]],  data[[i]]$Year >= validationStart)
+}
+
+numberOfDiffs = matrix(nrow = length(countries), ncol = 3)
+for (i in 1:length(countries)) {
+	createAutocorrelationPlot(trainingset[[i]], countries[[i]][1]) %>%
+	#ggexport(filename=paste(c("AC", countries[[i]][1], ".pdf"), collapse=""), width=5.83, height=8.27)
+	print()
+	t   <- "level"
+	md  <- 3
+	alp <- 0.05
+	numberOfDiffs[i, 1] <- ndiffs(trainingset[[i]]$TFR, test = "kpss", type = t, max.d = md, alpha = alp)
+	numberOfDiffs[i, 2] <- ndiffs(trainingset[[i]]$TFR, test = "adf",  type = t, max.d = md, alpha = alp)
+	numberOfDiffs[i, 3] <- ndiffs(trainingset[[i]]$TFR, test = "pp",   type = t, max.d = md, alpha = alp)
+	print(getMode(numberOfDiffs[i, ]))
+}
+
+models <- list()
+for (i in 1:length(countries)) {
+	models[[i]]      <- list()
+	models[[i]][[1]] <- Arima(trainingset[[i]]$TFR, order = c(0, 1, 0), method = "ML")
+	models[[i]][[2]] <- Arima(trainingset[[i]]$TFR, order = c(0, 1, 1), method = "ML")
+	models[[i]][[3]] <- Arima(trainingset[[i]]$TFR, order = c(0, 1, 2), method = "ML")
+	models[[i]][[4]] <- Arima(trainingset[[i]]$TFR, order = c(1, 1, 0), method = "ML")
+	models[[i]][[5]] <- Arima(trainingset[[i]]$TFR, order = c(1, 1, 1), method = "ML")
+	models[[i]][[6]] <- Arima(trainingset[[i]]$TFR, order = c(1, 1, 2), method = "ML")
+	models[[i]][[7]] <- Arima(trainingset[[i]]$TFR, order = c(2, 1, 0), method = "ML")
+	models[[i]][[8]] <- Arima(trainingset[[i]]$TFR, order = c(2, 1, 1), method = "ML")
+	models[[i]][[9]] <- Arima(trainingset[[i]]$TFR, order = c(2, 1, 2), method = "ML")
+}
+
+# Writing accuracies to datafile for tabulation in excel/latex
+writeAccuracies("accuracies2.csv", validationset, models, countries)
+
+# Based upon scoring models according to their realtive AICc and RMSE_Test
+fm <- c(1, 1, 0)
+finalmodels <- list()
+p <- list()
+for (i in 1:length(countries)) {
+	curts <- trainingset[[i]]
+	curvs <- validationset[[i]]
+	cur   <- rbind(curts, curvs)
+	finalmodels[[i]] <- Arima(cur$TFR, order = fm, method = "ML")
+	p[[i]] <- plotForecasts(cur, curts, curvs, models[[i]][[4]], finalmodels[[i]], countries[[i]][[1]])
+}
+
+pf <- ggarrange(p[[1]], p[[2]], p[[3]], p[[4]], p[[5]], p[[6]], p[[7]], p[[8]], ncol = 2, nrow = 4) %>%
+#ggexport(filename = "arima110Forecasts.pdf", width = 8.27, height = 11.69)
+print()
+\end{lstlisting}
+
+\subsection{utils.R}
+\begin{lstlisting}[caption={A file containing some helpful functions, mostly for creating pretty plots.}]
+createAutocorrelationPlot <- function(df, cn) {
+	p1 <- ggplot(df, aes(x=Year, y=TFR)) + geom_line()
+	p1 <- p1 + ggtitle(paste(c("Total fertility rate in", cn), collapse = " "))
+	p2 <- ggAcf(df$TFR, lag.max = 30, type = c("correlation"))
+	p2 <- p2 + ggtitle("Autocorrelations")
+	p3 <- ggAcf(df$TFR, lag.max = 30, type = c("partial"))
+	p3 <- p3 + ggtitle("Partial-autocorrelations")
+	diffed <- data.frame(df[-nrow(df), ], diff(df$TFR, differences = 1))
+	names(diffed)[4] <- "D1TFR"
+	pd <- ggplot(data = diffed, aes(x=Year, y=D1TFR)) + geom_line()
+	pd <- pd + ggtitle(paste(c("Differenced total fertility rate in", cn), collapse = " "))
+	p4 <- ggAcf(diffed$D1TFR, lag.max = 30, type = c("correlation"))
+	p4 <- p4 + ggtitle("ACF of differenced data")
+	p5 <- ggAcf(diffed$D1TFR, lag.max = 30, type = c("partial"))
+	p5 <- p5 + ggtitle("PACF of differenced data")
+	return(ggarrange(p1, pd, ggarrange(p2, p3, ncol = 2), ggarrange(p4, p5, ncol = 2), nrow = 4))
+}
+
+getMode <- function(v) {
+	uniqv <- unique(v)
+	return(uniqv[which.max(tabulate(match(v, uniqv)))])
+}
+
+writeAccuracies <- function (f, validationset, models, countries) {
+	write("Country;Order;AICc;RMSE;AIC;BIC", file = f)
+	for (i in 1:length(countries)) {
+		w  <- paste(countries[[i]][[1]], ";", sep = "")
+		for (j in 1:length(models[[i]])) {
+			if(j!=1) {w <- ";"}
+			cur <- models[[i]][[j]]
+			w   <- paste(w, "(",     cur$arma[1], ", 1, " ,cur$arma[2], ")", sep = "")
+			acc <- accuracy(f = forecast(cur, h = length(validationset[[i]]$TFR)), x = validationset[[i]]$TFR)
+			w   <- paste(w, cur$aicc, acc[4], cur$aic, cur$bic, sep = ";")
+			w   <- paste(w, "", sep = "")
+			write(w, file = f, append = TRUE)
+		}
+	}
+}
+
+plotForecasts <- function (cur, curts, curvs, prevmodel, finalmodel, cn) {
+	df1  <- data.frame(Year = seq(cur$Year[1], tail(cur$Year, n = 1)), TFR = cur$TFR, ident = "Data")
+	fc1  <- forecast(prevmodel, h = length(curvs$Year))
+	del1 <- seq(curvs$Year[1], tail(curvs$Year, n = 1))
+	df2  <- data.frame(Year = del1, f1 = fc1$mean,      ident = "Forecast 1")
+	df3  <- data.frame(Year = del1, f1u80 = fc1$upper[,1], ident = "Upper 80% 1")
+	df4  <- data.frame(Year = del1, f1u95 = fc1$upper[,2], ident = "Upper 95% 1")
+	df5  <- data.frame(Year = del1, f1l80 = fc1$lower[,1], ident = "Lower 80% 1")
+	df6  <- data.frame(Year = del1, f1l95 = fc1$lower[,2], ident = "Lower 95% 1")
+	ahea <- 10
+	fc2  <- forecast(finalmodel, h = ahea)
+	del2 <- seq(tail(curvs$Year, n = 1), tail(curvs$Year, n = 1) + ahea - 1)
+	df7  <- data.frame(Year = del2, f2 = fc2$mean,      ident = "Forecast 2")
+	df8  <- data.frame(Year = del2, f2u80 = fc2$upper[,1], ident = "Upper 80% 2")
+	df9  <- data.frame(Year = del2, f2u95 = fc2$upper[,2], ident = "Upper 95% 2")
+	df10 <- data.frame(Year = del2, f2l80 = fc2$lower[,1], ident = "Lower 80% 2")
+	df11 <- data.frame(Year = del2, f2l95 = fc2$lower[,2], ident = "Lower 95% 2")
+	del3 <- seq(curts$Year[1], tail(curts$Year, n = 1))
+	df12 <- data.frame(Year = del3, fit1 = models[[i]][[4]]$fitted, ident = "Fitted 1")
+	df13 <- data.frame(Year = cur$Year, fit2 = finalmodels[[i]]$fitted, ident = "Fitted 2")
+	empty  <- data.frame(Year = seq(cur$Year[1], tail(curvs$Year, n = 1) + ahea - 1), TFR = vector("numeric", length = length(seq(cur$Year[1], tail(curvs$Year, n = 1) + ahea - 1))))
+	dci180 <- merge(df3, df5,  by = "Year", all = TRUE)
+	dci195 <- merge(df4, df6,  by = "Year", all = TRUE)
+	dci280 <- merge(df8, df10, by = "Year", all = TRUE)
+	dci295 <- merge(df9, df11, by = "Year", all = TRUE)
+	dci180 <- merge(empty, dci180, by = "Year")
+	dci195 <- merge(empty, dci195, by = "Year")
+	dci280 <- merge(empty, dci280, by = "Year")
+	dci295 <- merge(empty, dci295, by = "Year")
+	p <- ggplot(df1, aes(Year, TFR))
+	+ geom_line(data = df1, colour = "#000000")
+	+ geom_ribbon(data = dci180, aes(x = Year, ymin = f1l80, ymax = f1u80), fill = "#E69F00", alpha = 0.2) 
+	+ geom_ribbon(data = dci195, aes(x = Year, ymin = f1l95, ymax = f1u95), fill = "#E69F00",   alpha = 0.2)
+	+ geom_line(  data = df2,    aes(x = Year, y = f1), colour = "#0072B2", alpha = 0.8, linetype = "solid",   size = 1.0) 
+	+ geom_line(  data = df12,   aes(x = Year, y = fit1), colour = "#0072B2", alpha = 0.7, linetype = "dotdash", size = 1.0)
+	+ geom_ribbon(data = dci280, aes(x = Year, ymin = f2l80, ymax = f2u80), fill = "#56B4E9",   alpha = 0.2) 
+	+ geom_ribbon(data = dci295, aes(x = Year, ymin = f2l95, ymax = f2u95), fill = "#56B4E9",   alpha = 0.2)
+	+ geom_line(  data = df7,    aes(x = Year, y = f2), colour = "#D55E00", alpha = 0.8, linetype = "solid",   size = 1.0) 
+	+ geom_line(  data = df13,   aes(x = Year, y = fit2), colour = "#D55E00", alpha = 0.7, linetype = "dashed",  size = 1.0)
+	+ scale_x_continuous(limits = c(1900, 2025)) + scale_y_continuous(limits = c(0, 4.5))
+	+  ggtitle(paste("Total fertility rate in ", cn, "\nwith forecasts", sep = ""))
+	return(p)
+}
+\end{lstlisting}
 
 \newpage
 \begin{thebibliography}{3}
